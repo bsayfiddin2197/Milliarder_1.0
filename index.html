@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milliarder Simulator V6.0 - Professional</title>
+    <style>
+        :root { --bg: #0b0b0b; --card: #151515; --text: #ffffff; --green: #00ff66; --red: #ff3b3b; --blue: #3390ec; --border: #222; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Layout */
+        .main { flex: 3; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
+        .sidebar { flex: 1.2; background: #0f0f0f; border-left: 1px solid var(--border); padding: 25px; display: flex; flex-direction: column; min-width: 350px; }
+
+        /* Top Bar */
+        .top-bar { display: flex; gap: 15px; width: 100%; max-width: 900px; margin-bottom: 20px; }
+        select { background: #222; color: #fff; border: 1px solid #333; padding: 12px; border-radius: 10px; flex: 1; cursor: pointer; font-weight: 600; outline: none; }
+
+        /* Stats */
+        #balance { font-size: 52px; font-weight: 800; color: var(--green); margin: 10px 0; letter-spacing: -1px; text-shadow: 0 0 20px rgba(0,255,102,0.2); }
+        .income-label { color: var(--green); font-size: 16px; margin-bottom: 30px; font-weight: 600; }
+
+        /* Grid */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; width: 100%; max-width: 1100px; }
+        .card { background: var(--card); padding: 25px; border-radius: 18px; text-align: center; border: 1px solid var(--border); transition: 0.3s; }
+        .card:hover { border-color: #444; transform: translateY(-5px); }
+        .item-name { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+        .price-tag { font-size: 20px; font-weight: 800; color: var(--green); margin-bottom: 20px; }
+
+        /* Controls */
+        .controls { display: flex; justify-content: center; gap: 10px; align-items: center; }
+        .btn { border: none; padding: 12px 20px; border-radius: 8px; font-weight: 900; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
+        .buy { background: var(--green); color: #000; }
+        .sell { background: var(--red); color: #fff; }
+        .qty { width: 50px; background: #000; border: 1px solid #333; color: #fff; text-align: center; padding: 10px; border-radius: 8px; font-weight: bold; }
+
+        /* Modal - Professional Payment */
+        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.96); display:none; justify-content:center; align-items:center; z-index:9999; backdrop-filter: blur(15px); }
+        .modal-box { background: #111; padding: 40px; border-radius: 30px; width: 400px; text-align: center; border: 1px solid #333; box-shadow: 0 25px 60px rgba(0,0,0,0.8); }
+        .m-input { width: 100%; padding: 16px; background: #000; border: 1px solid #333; color: #fff; border-radius: 12px; font-size: 18px; margin-bottom: 20px; outline: none; box-sizing: border-box; }
+        .m-input:focus { border-color: var(--green); }
+        
+        .card-row { display: flex; gap: 15px; margin-bottom: 25px; }
+        .card-row select { flex: 1; padding: 16px; }
+
+        /* Market Sidebar */
+        .market-card { background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #333; margin-bottom: 25px; }
+        .m-rate { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; font-weight: bold; }
+        .up { color: var(--green); } .down { color: var(--red); }
+
+        #pay-btn { width: 100%; background: var(--green); padding: 22px; border-radius: 15px; border: none; font-weight: 900; font-size: 18px; cursor: pointer; opacity: 0.2; pointer-events: none; margin-top: 20px; transition: 0.4s; }
+        #pay-btn.active { opacity: 1; pointer-events: all; box-shadow: 0 10px 30px rgba(0,255,102,0.3); }
+    </style>
+</head>
+<body>
+
+<div class="modal" id="pay-modal">
+    <div class="modal-box">
+        <h2 id="m-title">To'lov Tasdiqlash</h2>
+        <div id="m-sum" style="font-size: 32px; color: var(--green); font-weight: 800; margin-bottom: 30px;">$0</div>
+        
+        <div style="text-align: left;">
+            <label style="color: #777; font-size: 11px; margin-bottom: 5px; display: block;">KARTA RAQAMI</label>
+            <input type="text" id="card-num" class="m-input" placeholder="0000 0000 0000 0000" maxlength="19">
+            
+            <label style="color: #777; font-size: 11px; margin-bottom: 5px; display: block;">AMAL QILISH MUDDATI VA CVV</label>
+            <div class="card-row">
+                <select id="exp-month" class="m-input" style="margin:0">
+                    <option value="" disabled selected>OY</option>
+                    </select>
+                <select id="exp-year" class="m-input" style="margin:0">
+                    <option value="" disabled selected>YIL</option>
+                    <option value="25">25</option><option value="26">26</option>
+                    <option value="27">27</option><option value="28">28</option>
+                </select>
+                <input type="password" id="cvv" class="m-input" placeholder="CVV" maxlength="3" style="width: 80px; margin:0">
+            </div>
+        </div>
+
+        <button id="confirm-btn" class="btn buy" style="width: 100%; padding: 20px;" onclick="processPayment()">TASDIQLASH</button>
+        <p onclick="closePay()" style="color: #555; cursor: pointer; margin-top: 20px; font-size: 13px;">BEKOR QILISH</p>
+    </div>
+</div>
+
+<div class="main">
+    <div class="top-bar">
+        <select id="lang" onchange="updateUI()">
+            <option value="uz">O'zbekcha</option><option value="en">English</option><option value="ru">Русский</option>
+        </select>
+        <select id="curr" onchange="updateUI()">
+            <option value="usd">USD ($)</option><option value="uzs">UZS (so'm)</option><option value="rub">RUB (₽)</option>
+        </select>
+        <select id="hero" onchange="changeHero()">
+            <option value="0">Elon Musk ($754 mlrd)</option>
+            <option value="1">Ittifoq ($996 mlrd)</option>
+        </select>
+    </div>
+    
+    <div id="balance">$0</div>
+    <div class="income-label" id="inc-display"></div>
+    
+    <div class="grid" id="product-grid"></div>
+</div>
+
+<div class="sidebar">
+    <div class="market-card">
+        <div style="font-size: 11px; color: #555; margin-bottom: 15px; letter-spacing: 1px;">LIVE MARKET RATES</div>
+        <div class="m-rate"><span>USD/UZS</span> <span id="rate-uzs" class="up">12,850 ▲</span></div>
+        <div class="m-rate"><span>USD/RUB</span> <span id="rate-rub" class="down">101.4 ▼</span></div>
+        <div class="m-rate"><span>BITCOIN</span> <span id="rate-btc" class="up">$84,113 ▲</span></div>
+    </div>
+
+    <h3 id="cart-title">Savat:</h3>
+    <div id="cart-items" style="flex-grow: 1; overflow-y: auto;"></div>
+
+    <div style="border-top: 1px solid #222; padding-top: 20px;">
+        <div style="color: #777; font-size: 13px;" id="total-lbl">Jami To'lov:</div>
+        <div id="total-val" style="font-size: 28px; font-weight: 800; color: var(--red);">$0</div>
+        <button id="pay-btn" onclick="openPay()">TO'LOVGA O'TISH</button>
+    </div>
+</div>
+
+<script>
+    // Konfiguratsiya va Ma'lumotlar
+    const products = [
+        { id: 1, name: "iPhone 16 Pro", price: 1200 },
+        { id: 2, name: "Gentra Full", price: 15424 },
+        { id: 3, name: "BYD Han", price: 45000 },
+        { id: 4, name: "Tashkent City Villa", price: 1500000 },
+        { id: 5, name: "Twitter (X)", price: 44000000000 },
+        { id: 6, name: "Moon Villa", price: 50000000000 }
+    ];
+
+    const langData = {
+        uz: { title: "To'lov Tasdiqlash", buy: "Olish", sell: "Sotish", inc: "Sekundiga:", total: "Jami To'lov:", pay: "TO'LOVGA O'TISH", cart: "Savat:" },
+        en: { title: "Payment Confirmation", buy: "Buy", sell: "Sell", inc: "Per Sec:", total: "Total Amount:", pay: "PROCEED TO PAY", cart: "Cart:" },
+        ru: { title: "Подтверждение оплаты", buy: "Купить", sell: "Продать", inc: "В секунду:", total: "Итого к оплате:", pay: "ПЕРЕЙТИ К ОПЛАТЕ", cart: "Корзина:" }
+    };
+
+    let state = {
+        bal: 754000000000, inc: 5000, 
+        curr: 'usd', lang: 'uz', 
+        cartTotal: 0, inv: {},
+        rates: { uzs: 12826.24, rub: 101.94 } //
+    };
+
+    // Formatlash
+    function formatMoney(val) {
+        let r = 1;
+        if(state.curr === 'uzs') { r = state.rates.uzs; return (val * r).toLocaleString() + " so'm"; }
+        if(state.curr === 'rub') { r = state.rates.rub; return (val * r).toLocaleString() + " ₽"; }
+        return "$" + val.toLocaleString();
+    }
+
+    // UI Yangilash
+    function updateUI() {
+        state.lang = document.getElementById('lang').value;
+        state.curr = document.getElementById('curr').value;
+        const t = langData[state.lang];
+
+        document.getElementById('balance').innerText = formatMoney(state.bal);
+        document.getElementById('inc-display').innerText = `${t.inc} +${formatMoney(state.inc)}`;
+        document.getElementById('cart-title').innerText = t.cart;
+        document.getElementById('total-lbl').innerText = t.total;
+        document.getElementById('total-val').innerText = formatMoney(state.cartTotal);
+        document.getElementById('m-title').innerText = t.title;
+        document.getElementById('m-sum').innerText = formatMoney(state.cartTotal);
+
+        const pBtn = document.getElementById('pay-btn');
+        pBtn.innerText = t.pay;
+        pBtn.className = (state.cartTotal > 0 && state.bal >= state.cartTotal) ? 'active' : '';
+
+        // Gridni chizish
+        document.getElementById('product-grid').innerHTML = products.map(p => `
+            <div class="card">
+                <div class="item-name">${p.name}</div>
+                <div class="price-tag">${formatMoney(p.price)}</div>
+                <div class="controls">
+                    <button class="btn buy" onclick="updateCart(${p.id}, 1)">${t.buy}</button>
+                    <div class="qty">${state.inv[p.id] || 0}</div>
+                    <button class="btn sell" onclick="updateCart(${p.id}, -1)">${t.sell}</button>
+                </div>
+            </div>
+        `).join('');
+
+        // Savatni chizish
+        document.getElementById('cart-items').innerHTML = products.filter(p => state.inv[p.id] > 0).map(p => `
+            <div style="display:flex; justify-content:space-between; padding: 10px 0; border-bottom: 1px solid #222;">
+                <span>${p.name}</span>
+                <b>x${state.inv[p.id]}</b>
+            </div>
+        `).join('');
+    }
+
+    function updateCart(id, change) {
+        const p = products.find(x => x.id === id);
+        state.inv[id] = (state.inv[id] || 0) + change;
+        if(state.inv[id] < 0) state.inv[id] = 0;
+        state.cartTotal = products.reduce((sum, item) => sum + (item.price * (state.inv[item.id] || 0)), 0);
+        updateUI();
+    }
+
+    // Professional To'lov Mantiqi
+    function openPay() { document.getElementById('pay-modal').style.display = 'flex'; }
+    function closePay() { document.getElementById('pay-modal').style.display = 'none'; }
+
+    function processPayment() {
+        const card = document.getElementById('card-num').value;
+        const month = document.getElementById('exp-month').value;
+        const year = document.getElementById('exp-year').value;
+        const cvv = document.getElementById('cvv').value;
+
+        if(card.length < 16 || !month || !year || cvv.length < 3) {
+            alert("Iltimos, barcha maydonlarni to'g'ri to'ldiring!");
+            return;
+        }
+
+        state.bal -= state.cartTotal;
+        state.cartTotal = 0;
+        state.inv = {};
+        closePay();
+        updateUI();
+        alert("To'lov muvaffaqiyatli! Ustozingizning do'sti ham qoyil qoladi. 😉");
+    }
+
+    // Modalni to'ldirish (01-12 oylar)
+    const mSelect = document.getElementById('exp-month');
+    for(let i=1; i<=12; i++) {
+        let val = i < 10 ? '0'+i : i;
+        mSelect.innerHTML += `<option value="${val}">${val}</option>`;
+    }
+
+    // Karta raqamini formatlash
+    document.getElementById('card-num').addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/[^\d]/g, '').replace(/(.{4})/g, '$1 ').trim();
+    });
+
+    // Market dinamikasi
+    setInterval(() => {
+        state.rates.uzs += (Math.random() - 0.5) * 5;
+        state.rates.rub += (Math.random() - 0.5) * 0.1;
+        document.getElementById('rate-uzs').innerText = state.rates.uzs.toFixed(2).toLocaleString() + " ▲";
+        document.getElementById('rate-rub').innerText = state.rates.rub.toFixed(2) + " ▼";
+    }, 3000);
+
+    // Sekundiga daromad
+    setInterval(() => { state.bal += state.inc; updateUI(); }, 1000);
+
+    updateUI();
+</script>
+</body>
+</html>
